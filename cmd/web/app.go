@@ -1,5 +1,7 @@
 package main
 
 type App struct {
-	HTMLDir string
+	Port      string
+	HTMLDir   string
+	StaticDir string
 }

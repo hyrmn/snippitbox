@@ -6,33 +6,20 @@ import (
 	"net/http"
 )
 
-type Config struct {
-	Addr      string
-	HTMLDir   string
-	StaticDir string
-}
-
 func main() {
-	cfg := new(Config)
-	flag.StringVar(&cfg.Addr, "addr", "4000", "HTTP network address")
-	flag.StringVar(&cfg.HTMLDir, "html-dir", "./ui/html", "Path to HTML templates")
-	flag.StringVar(&cfg.StaticDir, "static-dir", "./ui/static", "Path to static assets")
+	port := flag.String("port", "4000", "HTTP port to listen on")
+	htmlDir := flag.String("html-dir", "./ui/html", "Path to HTML templates")
+	staticDir := flag.String("static-dir", "./ui/static", "Path to static assets")
 	flag.Parse()
 
 	app := &App{
-		HTMLDir: cfg.HTMLDir,
+		Port:      *port,
+		HTMLDir:   *htmlDir,
+		StaticDir: *staticDir,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.Home)
-	mux.HandleFunc("/snippet", app.ShowSnippet)
-	mux.HandleFunc("/snippet/new", app.NewSnippet)
+	log.Printf("Starting server on %s", app.Port)
 
-	fileServer := http.FileServer(http.Dir(cfg.StaticDir))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
-
-	log.Printf("Starting server on %s", cfg.Addr)
-
-	err := http.ListenAndServe(":"+cfg.Addr, mux)
+	err := http.ListenAndServe(":"+app.Port, app.Routes())
 	log.Fatal(err)
 }
