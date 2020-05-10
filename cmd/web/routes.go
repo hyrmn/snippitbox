@@ -10,6 +10,7 @@ func (app *App) Routes() *httprouter.Router {
 	router := httprouter.New()
 	router.GET("/", app.Home)
 	router.GET("/snippet/", app.NewSnippet)
+	router.POST("/snippet/", app.CreateSnippet)
 	router.GET("/snippet/:id", app.ShowSnippet)
 	//fileServer := http.FileServer(http.Dir(app.StaticDir))
 

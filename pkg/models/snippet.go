@@ -56,6 +56,22 @@ func GetLatestSnippets(s *Store, numToFetch uint) (Snippets, error) {
 	return snippets, err
 }
 
+func SaveSnippet(s *Store, title string, content string, expires time.Time) (*Snippet, error) {
+	snippet := &Snippet{
+		Title:   title,
+		Content: content,
+		Expires: expires,
+	}
+
+	err := upsert(s, snippet)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return snippet, nil
+}
+
 func loadByID(s *Store, id uint64, snippet *Snippet) error {
 	err := s.DB.View(func(tx *bolt.Tx) error {
 		// Get the bucket
