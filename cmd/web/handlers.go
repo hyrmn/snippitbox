@@ -22,7 +22,7 @@ func Home(app *App) http.Handler {
 			return
 		}
 
-		app.RenderHTML(w, "home.page.html", &HTMLData{
+		app.RenderHTML(w, r, "home.page.html", &HTMLData{
 			Snippets: snippets,
 		})
 	})
@@ -47,7 +47,7 @@ func ShowSnippet(app *App) http.Handler {
 			app.ServerError(w, err)
 		}
 
-		app.RenderHTML(w, "show.page.html", &HTMLData{
+		app.RenderHTML(w, r, "show.page.html", &HTMLData{
 			Snippet: snippet,
 		})
 	})
