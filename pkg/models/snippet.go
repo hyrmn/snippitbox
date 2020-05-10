@@ -39,7 +39,7 @@ func GetLatestSnippets(s *Store, numToFetch uint) (Snippets, error) {
 		c := b.Cursor()
 		var fetched uint = 0
 
-		for k, v := c.Last(); k != nil && fetched <= numToFetch; k, v = c.Prev() {
+		for k, v := c.Last(); k != nil && fetched < numToFetch; k, v = c.Prev() {
 			snippet := &Snippet{}
 			e := json.Unmarshal(v, &snippet)
 			if e != nil {
