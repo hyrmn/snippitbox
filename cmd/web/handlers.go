@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -15,7 +14,17 @@ func Home(app *App) http.Handler {
 			app.NotFound(w) // Use the app.NotFound() helper.
 			return
 		}
-		app.RenderHTML(w, "home.page.html") // Use the app.RenderHTML() helper.
+
+		snippets, err := models.GetLatestSnippets(app.Store, 10)
+
+		if err != nil {
+			app.ServerError(w, err)
+			return
+		}
+
+		app.RenderHTML(w, "home.page.html", &HTMLData{
+			Snippets: snippets,
+		})
 	})
 }
 
@@ -38,10 +47,9 @@ func ShowSnippet(app *App) http.Handler {
 			app.ServerError(w, err)
 		}
 
-		js, err := json.Marshal(snippet)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(js)
-
+		app.RenderHTML(w, "show.page.html", &HTMLData{
+			Snippet: snippet,
+		})
 	})
 }
 
