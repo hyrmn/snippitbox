@@ -2,16 +2,18 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
-func (app *App) Routes() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.Handle("/", Home(app))
-	mux.Handle("/snippet", ShowSnippet(app))
-	mux.Handle("/snippet/new", NewSnippet(app))
+func (app *App) Routes() *httprouter.Router {
+	router := httprouter.New()
+	router.GET("/", app.Home)
+	router.GET("/snippet/", app.NewSnippet)
+	router.GET("/snippet/:id", app.ShowSnippet)
+	//fileServer := http.FileServer(http.Dir(app.StaticDir))
 
-	fileServer := http.FileServer(http.Dir(app.StaticDir))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	router.ServeFiles("/static/*filepath", http.Dir(app.StaticDir))
 
-	return mux
+	return router
 }
