@@ -4,4 +4,8 @@
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
     </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="LiteDB" Version="5.0.10" />
+        <PackageReference Include="HtmlBuilders" Version="6.0.1" />
+    </ItemGroup>
 </Project>
