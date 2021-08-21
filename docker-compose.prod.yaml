@@ -2,10 +2,12 @@ version: '3'
 
 services:
   site:
-    build:
-      context: .
-      dockerfile: .
+    build: .
+    image: snippitbox
     ports:
       - "5020:80"
     volumes:
-      - "./db:/app/db"
+      - db:/app/data
+
+volumes:
+  db:
