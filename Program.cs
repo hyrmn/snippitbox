@@ -1,14 +1,13 @@
-using System.Collections.Generic;
-
-using HtmlBuilders;
+using static HtmlBuilders.HtmlTags;
 
 using LiteDB;
 
 using Microsoft.AspNetCore.Html;
+using HtmlBuilders;
+using Microsoft.AspNetCore.Antiforgery;
 
 var builder = WebApplication.CreateBuilder();
 builder.Services
-    .AddSingleton<Render>()
     .AddSingleton<SnippitRepository>()
     .AddAntiforgery()
     .AddMemoryCache();
@@ -17,18 +16,49 @@ builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Warning);
 
 var app = builder.Build();
 
-app.MapGet("/", (SnippitRepository repo, Render render) =>
+app.MapGet("/", (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) =>
 {
-    repo.Save(new Snippit { Id = ObjectId.NewObjectId(), Description = "Test", CreatedAt = DateTimeOffset.UtcNow });
-    return repo.GetPaged();
-    //return Results.Text(repo.DbPath, "text/html");
+    var antiForgeryToken = antiForgery.GetAndStoreTokens(context);
+    return Results.Text(RenderHome(antiForgeryToken), "text/html");
+});
+
+app.MapPost("/", async (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) => {
+    await antiForgery.ValidateRequestAsync(context);
+    var form = context.Request.Form;
+    var snippit = new Snippit { Id = ObjectId.NewObjectId(), Description = form["Description"], CreatedAt = DateTimeOffset.UtcNow };
+    repo.Save(snippit);
+    return Results.Redirect("/");
 });
 
 app.Run();
 
-class Render
-{
 
+static string RenderHome(AntiforgeryTokenSet antiForgeryToken)
+{
+    return Html
+            .Attribute("lang", "en")
+            .Append(
+                Body.Append(H1.Append("Hi there"))
+                    .Append(SnippitForm(antiForgeryToken))
+            ).ToHtmlString();
+}
+
+static HtmlTag SnippitForm(AntiforgeryTokenSet antiForgeryToken)
+{
+    var descriptionField = Div
+        .Append(Label.Append("Description"))
+        .Append(Input.Text.Name("Description"));
+    
+    var submit = Div.Append(Button.Append("Submit"));
+
+    var form = Form
+           .Attribute("method", "post")
+           .Attribute("action", "/")
+             .Append(Input.Hidden.Name(antiForgeryToken.FormFieldName).Value(antiForgeryToken.RequestToken))
+             .Append(descriptionField)
+             .Append(submit);
+
+    return form;
 }
 
 record Snippit
@@ -48,7 +78,7 @@ record Summary
 record SummaryResult
 {
     public int Total { get; set; }
-    public int Page { get; set; }
+    public int Start { get; set; }
     public Summary[] List { get; set; } = Array.Empty<Summary>();
 }
 
@@ -65,18 +95,18 @@ class SnippitRepository
 
     public string DbPath => dbPath;
 
-    public SummaryResult GetPaged()
+    public SummaryResult GetPaged(int start, int pageSize)
     {
         using var db = new LiteDatabase(dbPath);
         var col = db.GetCollection<Snippit>(nameof(Snippit));
-        col.EnsureIndex(s => s.CreatedAt);
+
         return new()
         {
             Total = col.Count(),
-            List = col.Query()
-                .OrderByDescending(s => s.CreatedAt)
-                .Select(s => new Summary { Id = s.Id, Description = s.Description, CreatedAt = s.CreatedAt })
-                .ToArray()
+            Start = start,
+            List = col.Find(Query.All(Query.Descending), skip: start, limit: pageSize)
+                    .Select(s => new Summary { Id = s.Id, Description = s.Description, CreatedAt = s.CreatedAt })
+                    .ToArray()
         };
     }
 
