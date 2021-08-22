@@ -1,9 +1,8 @@
-using static HtmlBuilders.HtmlTags;
+using static Scriban.Template;
 
 using LiteDB;
+using Scriban;
 
-using Microsoft.AspNetCore.Html;
-using HtmlBuilders;
 using Microsoft.AspNetCore.Antiforgery;
 
 var builder = WebApplication.CreateBuilder();
@@ -16,15 +15,17 @@ builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Warning);
 
 var app = builder.Build();
 
-app.MapGet("/", (HttpContext context, SnippitRepository repo) =>
+app.MapGet("/", async (SnippitRepository repo) =>
 {
-    return Results.Text(RenderHome(), "text/html");
+    return Results.Text(await RenderHome(), "text/html");
 });
 
-app.MapGet("/new", (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) =>
+app.MapGet("/favicon.ico", () => Results.NotFound());
+
+app.MapGet("/new", async (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) =>
 {
     var antiForgeryToken = antiForgery.GetAndStoreTokens(context);
-    return Results.Text(RenderNew(antiForgeryToken), "text/html");
+    return Results.Text(await RenderNew(antiForgeryToken), "text/html");
 });
 
 app.MapPost("/new", async (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) => {
@@ -39,46 +40,41 @@ app.MapGet("/{snippitId}", (HttpContext context, string snippitId, SnippitReposi
 {
     var snippit = repo.Get(new ObjectId(snippitId));
     return snippit;
-    //return Results.Text(RenderHome(), "text/html");
 });
 
 app.Run();
 
-static string RenderHome()
+static async Task<string> RenderHome()
 {
-    return Html
-            .Attribute("lang", "en")
-            .Append(
-                Body.Append(H1.Append("Hi there"))
-            ).ToHtmlString();
+    return await Layout().RenderAsync(new { Content = "<h1>new layout</h1>" });
 }
 
-static string RenderNew(AntiforgeryTokenSet antiForgeryToken)
+static async Task<string> RenderNew(AntiforgeryTokenSet antiForgeryToken)
 {
-    return Html
-            .Attribute("lang", "en")
-            .Append(
-                Body.Append(H1.Append("Hi there"))
-                    .Append(SnippitForm(antiForgeryToken))
-            ).ToHtmlString();
+    var content = Parse(@$"
+        <form method=""post"">
+            <input type=""hidden"" name=""{antiForgeryToken.FormFieldName}"" value=""{antiForgeryToken.RequestToken}"">
+            <div>
+                <label for=""Description"">Description</label><input name=""Description"" type=""text"" />
+            </div>
+            <div>
+                <button>Submit</button>
+            </div>
+        </form>
+    ");
+    return await Layout().RenderAsync(new { Content = await content.RenderAsync() });
 }
 
-static HtmlTag SnippitForm(AntiforgeryTokenSet antiForgeryToken)
+static Template Layout()
 {
-    var descriptionField = Div
-        .Append(Label.Append("Description"))
-        .Append(Input.Text.Name("Description"));
-    
-    var submit = Div.Append(Button.Append("Submit"));
-
-    var form = Form
-           .Attribute("method", "post")
-           
-             .Append(Input.Hidden.Name(antiForgeryToken.FormFieldName).Value(antiForgeryToken.RequestToken))
-             .Append(descriptionField)
-             .Append(submit);
-
-    return form;
+    return Parse(@"
+    <!DOCTYPE html>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
+    <link href=""data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA00lEQVQ4jZWSQRGEMAxFX6kBJFQCEpDAfS+c91QHSKgEJCChEioBCUhgD7RLtgsFMtML89/PTwI8qxpoAQ8EwD6B2wit4s134Q5ogCUzmO5EdlHsgUapH5P+Cp6yjl4kmaPmB2jRus/gEDt5YFUqmmg6CY5iPidir8AQdf1ZdCkOoF/8b9qyX8AdzWvibAal8lPJF/K5j8qewJ76Gh6iQW7i7nRuBJBMFuBNVVn2ZRa7y46w7SadszvGtqqBGfX9UeT3ZGpKBuZEkAx8MftFjRQW+AGoU1dleoYetgAAAABJRU5ErkJggg=="" rel=""icon"" type=""image/x-icon"" />
+    <title>{{ title }}</title>
+    {{~ content ~}}
+    ");
 }
 
 record Snippit
