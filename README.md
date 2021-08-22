@@ -17,3 +17,10 @@ This will present you with a dialog asking if you're really sure that you want t
 
 Then, once you run the app and navigate to the site, you'll likely get a browser warning asking you if you're really sure that you want to proceed because the certificate is self-signed. While this does raise
 a philosophical question on if someone can ever truly trust themselves, that doesn't help us with moving forward so go into the appropriate section on the browser warning and tell it to trust the certificate.
+
+## Special Thanks
+
+This little app is made possible by:
+- [Scriban](https://github.com/scriban/scriban) for templating
+- [LiteDB](https://www.litedb.org) for data storage
+- [Roland Taylor](https://twitter.com/rolandixor/) [Anole](https://github.com/rolandixor/anole) CSS framework.

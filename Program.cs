@@ -14,10 +14,12 @@ builder.Services
 builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Warning);
 
 var app = builder.Build();
+app.UseStaticFiles();
 
 app.MapGet("/", async (SnippitRepository repo) =>
 {
-    return Results.Text(await RenderHome(), "text/html");
+    var result = repo.Find(0, 10);
+    return Results.Text(await RenderHome(result), "text/html");
 });
 
 app.MapGet("/favicon.ico", () => Results.NotFound());
@@ -44,16 +46,22 @@ app.MapGet("/{snippitId}", (HttpContext context, string snippitId, SnippitReposi
 
 app.Run();
 
-static async Task<string> RenderHome()
+static async Task<string> RenderHome(SummaryResult result)
 {
-    return await Layout().RenderAsync(new { Content = "<h1>new layout</h1>" });
+    var contentTemplate = Parse(@"
+        {{~ for summary in result.list ~}}
+            {{ summary.description }}
+        {{~ end ~}}
+    ");
+
+    return await Layout().RenderAsync(new { Title = "Home", Content = await contentTemplate.RenderAsync(new { Result = result }) });
 }
 
 static async Task<string> RenderNew(AntiforgeryTokenSet antiForgeryToken)
 {
-    var content = Parse(@$"
+    var contentTemplate = Parse(@"
         <form method=""post"">
-            <input type=""hidden"" name=""{antiForgeryToken.FormFieldName}"" value=""{antiForgeryToken.RequestToken}"">
+            <input type=""hidden"" name=""{{token.form_field_name}}"" value=""{{token.request_token}}"">
             <div>
                 <label for=""Description"">Description</label><input name=""Description"" type=""text"" />
             </div>
@@ -62,7 +70,8 @@ static async Task<string> RenderNew(AntiforgeryTokenSet antiForgeryToken)
             </div>
         </form>
     ");
-    return await Layout().RenderAsync(new { Content = await content.RenderAsync() });
+
+    return await Layout().RenderAsync(new { Content = await contentTemplate.RenderAsync(new { token = antiForgeryToken }) });
 }
 
 static Template Layout()
@@ -72,10 +81,20 @@ static Template Layout()
     <meta charset=""utf-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
     <link href=""data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA00lEQVQ4jZWSQRGEMAxFX6kBJFQCEpDAfS+c91QHSKgEJCChEioBCUhgD7RLtgsFMtML89/PTwI8qxpoAQ8EwD6B2wit4s134Q5ogCUzmO5EdlHsgUapH5P+Cp6yjl4kmaPmB2jRus/gEDt5YFUqmmg6CY5iPidir8AQdf1ZdCkOoF/8b9qyX8AdzWvibAal8lPJF/K5j8qewJ76Gh6iQW7i7nRuBJBMFuBNVVn2ZRa7y46w7SadszvGtqqBGfX9UeT3ZGpKBuZEkAx8MftFjRQW+AGoU1dleoYetgAAAABJRU5ErkJggg=="" rel=""icon"" type=""image/x-icon"" />
+    <link rel=""preload"" href=""/css/anole.css"" as=""style"">
+    <link href=""/css/anole.css"" rel=""stylesheet"" type=""text/css"" />
     <title>{{ title }}</title>
-    {{~ content ~}}
+    <body class=""anole"">
+        <div class=""an-body"">
+            <div class=""an-box"">
+            {{~ content ~}}
+            </div>
+        </div>
+    </body>
     ");
 }
+
+
 
 record Snippit
 {
@@ -104,8 +123,6 @@ class SnippitRepository
         this.logger = logger;
     }
 
-    public string DbPath => dbPath;
-
     public SummaryResult Find(int start, int pageSize)
     {
         using var db = new LiteDatabase(dbPath);
@@ -133,7 +150,6 @@ class SnippitRepository
         using var db = new LiteDatabase(dbPath);
         var col = db.GetCollection<Snippit>(nameof(Snippit));
         col.EnsureIndex(s => s.CreatedAt);
-
         col.Upsert(snippit);
     }
 }
