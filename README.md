@@ -27,3 +27,4 @@ This little app is made possible by:
 - [Scriban](https://github.com/scriban/scriban) for templating
 - [LiteDB](https://www.litedb.org) for data storage
 - [Roland Taylor](https://twitter.com/rolandixor/)'s [Anole](https://github.com/rolandixor/anole) CSS framework.
+- Favicon is from [iconpacks.net](https://www.iconpacks.net)
