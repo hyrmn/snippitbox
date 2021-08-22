@@ -16,24 +16,44 @@ builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Warning);
 
 var app = builder.Build();
 
-app.MapGet("/", (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) =>
+app.MapGet("/", (HttpContext context, SnippitRepository repo) =>
 {
-    var antiForgeryToken = antiForgery.GetAndStoreTokens(context);
-    return Results.Text(RenderHome(antiForgeryToken), "text/html");
+    return Results.Text(RenderHome(), "text/html");
 });
 
-app.MapPost("/", async (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) => {
+app.MapGet("/new", (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) =>
+{
+    var antiForgeryToken = antiForgery.GetAndStoreTokens(context);
+    return Results.Text(RenderNew(antiForgeryToken), "text/html");
+});
+
+app.MapPost("/new", async (HttpContext context, SnippitRepository repo, IAntiforgery antiForgery) => {
     await antiForgery.ValidateRequestAsync(context);
     var form = context.Request.Form;
     var snippit = new Snippit { Id = ObjectId.NewObjectId(), Description = form["Description"], CreatedAt = DateTimeOffset.UtcNow };
     repo.Save(snippit);
-    return Results.Redirect("/");
+    return Results.Redirect($"/{snippit.Id}");
+});
+
+app.MapGet("/{snippitId}", (HttpContext context, string snippitId, SnippitRepository repo) =>
+{
+    var snippit = repo.Get(new ObjectId(snippitId));
+    return snippit;
+    //return Results.Text(RenderHome(), "text/html");
 });
 
 app.Run();
 
+static string RenderHome()
+{
+    return Html
+            .Attribute("lang", "en")
+            .Append(
+                Body.Append(H1.Append("Hi there"))
+            ).ToHtmlString();
+}
 
-static string RenderHome(AntiforgeryTokenSet antiForgeryToken)
+static string RenderNew(AntiforgeryTokenSet antiForgeryToken)
 {
     return Html
             .Attribute("lang", "en")
@@ -53,7 +73,7 @@ static HtmlTag SnippitForm(AntiforgeryTokenSet antiForgeryToken)
 
     var form = Form
            .Attribute("method", "post")
-           .Attribute("action", "/")
+           
              .Append(Input.Hidden.Name(antiForgeryToken.FormFieldName).Value(antiForgeryToken.RequestToken))
              .Append(descriptionField)
              .Append(submit);
@@ -68,12 +88,7 @@ record Snippit
     public DateTimeOffset CreatedAt { get; set; }
 }
 
-record Summary
-{
-    public ObjectId Id { get; set; } = ObjectId.Empty;
-    public string Description { get; set; } = string.Empty;
-    public DateTimeOffset CreatedAt { get; set; }
-}
+record Summary (string Id, string Description, DateTimeOffset CreatedAt);
 
 record SummaryResult
 {
@@ -95,7 +110,7 @@ class SnippitRepository
 
     public string DbPath => dbPath;
 
-    public SummaryResult GetPaged(int start, int pageSize)
+    public SummaryResult Find(int start, int pageSize)
     {
         using var db = new LiteDatabase(dbPath);
         var col = db.GetCollection<Snippit>(nameof(Snippit));
@@ -105,9 +120,16 @@ class SnippitRepository
             Total = col.Count(),
             Start = start,
             List = col.Find(Query.All(Query.Descending), skip: start, limit: pageSize)
-                    .Select(s => new Summary { Id = s.Id, Description = s.Description, CreatedAt = s.CreatedAt })
+                    .Select(s => new Summary(s.Id.ToString(),s.Description, s.CreatedAt))
                     .ToArray()
         };
+    }
+
+    public Snippit Get(ObjectId id)
+    {
+        using var db = new LiteDatabase(dbPath);
+        var col = db.GetCollection<Snippit>(nameof(Snippit));
+        return col.FindById(id);
     }
 
     public void Save(Snippit snippit)
@@ -118,6 +140,4 @@ class SnippitRepository
 
         col.Upsert(snippit);
     }
-
-    public Snippit Get(ObjectId id) => throw new NotImplementedException();
 }
