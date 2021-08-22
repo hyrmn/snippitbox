@@ -94,8 +94,6 @@ static Template Layout()
     ");
 }
 
-
-
 record Snippit
 {
     public ObjectId Id { get; set; } = ObjectId.Empty;
