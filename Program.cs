@@ -49,9 +49,11 @@ app.Run();
 static async Task<string> RenderHome(SummaryResult result)
 {
     var contentTemplate = Parse(@"
-        {{~ for summary in result.list ~}}
+    <div class=""an-box"">
+        {{- for summary in result.list -}}
             {{ summary.description }}
-        {{~ end ~}}
+        {{- end -}}
+    </div>
     ");
 
     return await Layout().RenderAsync(new { Title = "Home", Content = await contentTemplate.RenderAsync(new { Result = result }) });
@@ -86,9 +88,7 @@ static Template Layout()
     <title>{{ title }}</title>
     <body class=""anole"">
         <div class=""an-body"">
-            <div class=""an-box"">
             {{~ content ~}}
-            </div>
         </div>
     </body>
     ");
@@ -99,7 +99,10 @@ record Snippit
     public ObjectId Id { get; set; } = ObjectId.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
+    public File[] Files { get; set; } = Array.Empty<File>();
 }
+
+record File(string Name, string Contents, string FileType);
 
 record Summary (string Id, string Description, DateTimeOffset CreatedAt);
 
