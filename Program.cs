@@ -83,6 +83,7 @@ static Template Layout()
     <meta charset=""utf-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1"">
     <link href=""data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA00lEQVQ4jZWSQRGEMAxFX6kBJFQCEpDAfS+c91QHSKgEJCChEioBCUhgD7RLtgsFMtML89/PTwI8qxpoAQ8EwD6B2wit4s134Q5ogCUzmO5EdlHsgUapH5P+Cp6yjl4kmaPmB2jRus/gEDt5YFUqmmg6CY5iPidir8AQdf1ZdCkOoF/8b9qyX8AdzWvibAal8lPJF/K5j8qewJ76Gh6iQW7i7nRuBJBMFuBNVVn2ZRa7y46w7SadszvGtqqBGfX9UeT3ZGpKBuZEkAx8MftFjRQW+AGoU1dleoYetgAAAABJRU5ErkJggg=="" rel=""icon"" type=""image/x-icon"" />
+    <link rel=""prefetch"" href=""https://rsms.me/inter/inter.css"" as=""style"" onload=""this.rel = 'stylesheet'"">
     <link rel=""preload"" href=""/css/anole.css"" as=""style"">
     <link href=""/css/anole.css"" rel=""stylesheet"" type=""text/css"" />
     <title>{{ title }}</title>
@@ -96,10 +97,11 @@ static Template Layout()
 
 record Snippit
 {
-    public ObjectId Id { get; set; } = ObjectId.Empty;
-    public string Description { get; set; } = string.Empty;
-    public DateTimeOffset CreatedAt { get; set; }
-    public File[] Files { get; set; } = Array.Empty<File>();
+    public ObjectId Id { get; init; } = ObjectId.Empty;
+    public string Description { get; init; } = string.Empty;
+    public DateTimeOffset CreatedAt { get; init; }
+    public string Contents { get; init; } = string.Empty;
+    public string FileType {  get; init; } = string.Empty;
 }
 
 record File(string Name, string Contents, string FileType);
