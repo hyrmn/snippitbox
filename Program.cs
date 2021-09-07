@@ -104,7 +104,6 @@ static async Task<string> RenderNew(AntiforgeryTokenSet antiForgeryToken)
     return await Layout().RenderAsync(new { Title="Add Snippit", Content = await contentTemplate.RenderAsync(new { token = antiForgeryToken }) });
 }
 
-
 static Template Layout()
 {
     return Parse(@"

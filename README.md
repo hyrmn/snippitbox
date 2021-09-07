@@ -1,5 +1,5 @@
-# snippitbox
-A very small app to share very small things. Well, so far, a very small app that can get compiled.
+# Snippitbox
+I'm doing some very small and very focused playing around with ASP.NET CORE on .NET 6. This app was intented to provide some very basic, and not full-featured, functionality with the new Minimal API work. Snippitbox will take in some data and save it to a small local database. There is no validation or search. Heck, I don't even have paging wired up (although it is possible and the query supports it). I might come back to that, but so far I've gotten to where I wanted to be... tiny app that works and that can be built on Docker (or your favorite OCI-compatible host that can read Dockerfiles).
 
 This is a single file app written in .NET 6 RC1 and using ASP.NET Core. If you don't have .NET 6.0 RC1, or later, you can install it from the nightly installer links near the bottom of https://github.com/dotnet/installer
 
